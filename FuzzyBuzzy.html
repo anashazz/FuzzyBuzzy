@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FuzzyBuzzy Messenger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom Tailwind Configuration for new accent color -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Define the new primary accent color (FuzzyBuzzy Accent Blue)
+                        'FuzzyBuzzy-accent': {
+                            DEFAULT: '#0394fc',
+                            '50': '#eff6ff', 
+                            '100': '#dbeafe',
+                            '200': '#bfdbfe',
+                            '300': '#93c5fd',
+                            '400': '#60a5fa',
+                            '500': '#0394fc', // Main
+                            '600': '#2563eb', // Darker for hover/active
+                            '700': '#1d4ed8', 
+                            '800': '#1e40af',
+                            '900': '#1e3a8a',
+                            '950': '#172554',
+                        }
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Inter font for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            /* Updated to use the new accent color */
+            background: #0394fc; 
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+        /* Simple spinner for loading state */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            /* Updated spinner color to use the new accent */
+            border-left-color: #0394fc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom styles for mobile sidebar */
+        .sidebar-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40; 
+        }
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 50; 
+        }
+        .sidebar-mobile.open {
+            transform: translateX(0);
+        }
+
+        /* Adjust main container to fill available height and allow scrolling */
+        #chat-application-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        #chat-container {
+            flex: 1; 
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        .flex-1-scroll {
+            flex: 1;
+            overflow-y: auto; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 antialiased">
+
+    <!-- Overall Wrapper to handle non-full-screen and scrolling -->
+    <div id="chat-application-wrapper">
+        <!-- Loading Spinner Container -->
+        <div id="loading-spinner-container" class="fixed inset-0 flex items-center justify-center bg-gray-100 z-50">
+            <div class="flex flex-col items-center">
+                <div class="spinner mb-4"></div>
+                <p class="text-gray-700 text-lg">Loading FuzzyBuzzy chat application...</p>
+            </div>
+        </div>
+
+        <!-- Authentication Form Container -->
+        <div id="auth-container" class="fixed inset-0 flex items-center justify-center bg-gray-100 z-50 hidden">
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+                <!-- Updated application name -->
+                <h2 class="text-3xl font-bold text-center text-gray-800 mb-6">Welcome to FuzzyBuzzy (Messenger)</h2>
+                <div id="auth-error-message" class="text-red-600 text-center mb-4 hidden"></div>
+
+                <input
+                    type="text"
+                    id="auth-display-name"
+                    placeholder="Display Name (optional for sign-up)"
+                    class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                />
+                <input
+                    type="email"
+                    id="auth-email"
+                    placeholder="Email"
+                    class="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                />
+                <input
+                    type="password"
+                    id="auth-password"
+                    placeholder="Password"
+                    class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                />
+
+                <button
+                    id="signup-button"
+                    class="w-full bg-green-600 text-white p-3 rounded-full font-semibold text-lg hover:bg-green-700 transition duration-200 ease-in-out shadow-md mb-3"
+                >
+                    Sign Up
+                </button>
+                <!-- Updated button colors to use the new accent -->
+                <button
+                    id="signin-button"
+                    class="w-full bg-FuzzyBuzzy-accent-500 text-white p-3 rounded-full font-semibold text-lg hover:bg-FuzzyBuzzy-accent-600 transition duration-200 ease-in-out shadow-md mb-3"
+                >
+                    Sign In
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Chat Application Container -->
+        <div id="chat-container" class="flex flex-col flex-1 bg-gray-50 antialiased hidden">
+            <!-- Header -->
+            <!-- Updated gradient to use the new accent colors -->
+            <header class="bg-gradient-to-r from-FuzzyBuzzy-accent-600 to-FuzzyBuzzy-accent-700 text-white p-4 shadow-lg flex justify-between items-center rounded-b-lg">
+                <div class="flex items-center">
+                    <!-- Mobile menu button -->
+                    <!-- Updated hover/focus rings -->
+                    <button id="mobile-menu-button" class="md:hidden p-2 mr-2 rounded-lg hover:bg-FuzzyBuzzy-accent-800 focus:outline-none focus:ring-2 focus:ring-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <!-- Updated application name -->
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">FuzzyBuzzy Messenger</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-right">
+                        Logged in as: <span id="current-user-display-name" class="font-semibold"></span>
+                        <br/>
+                        Your ID: <span id="current-user-id" class="font-mono text-xs opacity-80"></span>
+                    </div>
+                    <button
+                        id="signout-button"
+                        class="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 transition duration-200 ease-in-out shadow-md"
+                    >
+                        Sign Out
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex flex-1 flex-col md:flex-row overflow-hidden relative">
+                <!-- Sidebar Overlay (for mobile) -->
+                <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+                <!-- Sidebar for Chat Rooms and Online Users -->
+                <aside id="sidebar" class="fixed inset-y-0 left-0 w-3/4 md:w-1/4 bg-white border-r border-gray-200 p-4 flex flex-col shadow-md rounded-br-lg sidebar-mobile md:static md:translate-x-0 overflow-y-auto custom-scrollbar">
+                    <div class="flex justify-between items-center mb-4 md:hidden">
+                        <h2 class="text-xl font-semibold text-gray-800">Menu</h2>
+                        <button id="close-sidebar-button" class="p-2 rounded-lg hover:bg-gray-200 focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <!-- Chat Rooms Section -->
+                    <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Chat Rooms</h2>
+                    <div class="flex mb-4">
+                        <input
+                            type="text"
+                            id="new-room-name-input"
+                            placeholder="New room name"
+                            class="flex-1 p-2 border border-gray-300 rounded-l-full focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                        />
+                        <!-- Updated button color to use the new accent -->
+                        <button
+                            id="create-room-button"
+                            class="bg-FuzzyBuzzy-accent-500 text-white px-4 py-2 rounded-r-full hover:bg-FuzzyBuzzy-accent-600 transition duration-200 ease-in-out shadow-md"
+                        >
+                            Create
+                        </button>
+                    </div>
+                    <!-- Search Input for Rooms -->
+                    <input
+                        type="text"
+                        id="search-room-input"
+                        placeholder="Search rooms..."
+                        class="w-full p-2 mb-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                    />
+                    <div id="chat-rooms-list" class="flex flex-col gap-2 mb-6 flex-1 pr-2 custom-scrollbar">
+                        <!-- Chat rooms will be dynamically loaded here -->
+                        <p class="text-gray-500 text-sm italic">Loading rooms...</p>
+                    </div>
+
+                    <!-- Online Users Section -->
+                    <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Users in Room</h2>
+                    <div id="online-users-list" class="flex-1 pr-2 custom-scrollbar">
+                        <!-- Online users will be dynamically loaded here -->
+                        <p class="text-gray-500 text-sm italic">Loading users...</p>
+                    </div>
+                </aside>
+
+                <!-- Main Chat Area -->
+                <main class="flex-1 w-full md:w-3/4 flex flex-col bg-gray-100 rounded-bl-lg">
+                    <!-- Current Room Header -->
+                    <div class="bg-white p-4 border-b border-gray-200 shadow-sm rounded-tr-lg">
+                        <h2 id="current-room-name" class="text-2xl font-bold text-gray-800">#general</h2>
+                    </div>
+
+                    <!-- Messages Display -->
+                    <div id="messages-display" class="flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar">
+                        <!-- Messages will be dynamically loaded here -->
+                        <div class="flex items-center justify-center h-full">
+                            <p class="text-gray-500 text-lg italic">Loading messages...</p>
+                        </div>
+                    </div>
+
+                    <!-- Message Input Form -->
+                    <form id="message-form" class="bg-white p-4 border-t border-gray-200 shadow-inner rounded-tl-lg">
+                        <div class="flex items-center space-x-3">
+                            <input
+                                type="text"
+                                id="new-message-input"
+                                placeholder="Type your message..."
+                                class="flex-1 p-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500 text-lg"
+                            />
+                            <!-- Updated button color to use the new accent -->
+                            <button
+                                type="submit"
+                                class="bg-FuzzyBuzzy-accent-500 text-white p-3 rounded-full hover:bg-FuzzyBuzzy-accent-600 transition duration-200 ease-in-out shadow-lg transform active:scale-95"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-6 w-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </main>
+            </div>
+        </div>
+    </div> <!-- End of #chat-application-wrapper -->
+
+    <!-- --- Modals for Password Protected Rooms --- -->
+
+    <!-- Create Room Modal -->
+    <div id="create-room-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-lg w-full">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Create New Room</h3>
+            <form id="create-room-form">
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Room Name</label>
+                    <input
+                        type="text"
+                        id="modal-room-name"
+                        required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                        placeholder="e.g., Team-Project-Alpha"
+                    />
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">Password (Optional)</label>
+                    <input
+                        type="password"
+                        id="modal-room-password"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                        placeholder="Leave blank for public room"
+                    />
+                </div>
+                <div id="create-room-error" class="text-red-500 mb-4 hidden"></div>
+                <div class="flex justify-end space-x-3">
+                    <button
+                        type="button"
+                        id="cancel-create-room"
+                        class="bg-gray-300 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-400 transition"
+                    >
+                        Cancel
+                    </button>
+                    <!-- Updated button color to use the new accent -->
+                    <button
+                        type="submit"
+                        class="bg-FuzzyBuzzy-accent-500 text-white px-4 py-2 rounded-full font-semibold hover:bg-FuzzyBuzzy-accent-600 transition"
+                    >
+                        Create Room
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Prompt Modal (For Joining Protected Room) -->
+    <div id="password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Protected Room</h3>
+            <p id="password-room-name-display" class="text-gray-600 mb-4"></p>
+            <form id="password-form">
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2" for="join-room-password">Enter Password</label>
+                    <input
+                        type="password"
+                        id="join-room-password"
+                        required
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-FuzzyBuzzy-accent-500"
+                        placeholder="Room Password"
+                    />
+                </div>
+                <div id="password-error-message" class="text-red-500 mb-4 hidden"></div>
+                <div class="flex justify-end space-x-3">
+                    <button
+                        type="button"
+                        id="cancel-join-room"
+                        class="bg-gray-300 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-400 transition"
+                    >
+                        Cancel
+                    </button>
+                    <!-- Updated button color to use the new accent -->
+                    <button
+                        type="submit"
+                        class="bg-FuzzyBuzzy-accent-500 text-white px-4 py-2 rounded-full font-semibold hover:bg-FuzzyBuzzy-accent-600 transition"
+                    >
+                        Join Room
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            updateProfile,
+            signOut
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ----------------------------------------------------------------------
+        // HARDCODED CONFIGURATION - CRITICAL SECTION
+        // ----------------------------------------------------------------------
+        // Updated App ID for consistency
+        const appId = 'FuzzyBuzzy-messenger-hardcoded-v2'; 
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBCvSDFrtJyazuL2cfv3ZULv4xXD60DZc", // Mock API Key
+            // --- UPDATED PROJECT ID AND DOMAINS ---
+            authDomain: "FuzzyBuzzy-messenger.firebaseapp.com",
+            projectId: "anasi-messenger", // <--- THE PROJECT ID YOU REQUESTED
+            storageBucket: "FuzzyBuzzy-messenger.appspot.com",
+            // --- END UPDATED CONFIG ---
+            messagingSenderId: "123456789012", 
+            appId: "1:123456789012:web:abcdefghij0000000000" // Mock App ID
+        };
+        // ----------------------------------------------------------------------
+
+        // Firebase Initialization
+        let app;
+        let db;
+        let auth;
+        let currentUserId = null;
+        let currentUserName = null; 
+        let selectedRoomId = 'general'; // Default room
+        let allChatRooms = []; 
+        let roomToJoinId = null; 
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            document.getElementById('messages-display').innerHTML = '<p class="text-red-500 text-center">Error loading chat. Please check console.</p>';
+        }
+
+        // --- Helper Function for Simple Hashing ---
+        const simpleHash = (str) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash.toString(16);
+        };
+
+        // --- DOM Elements ---
+        const loadingSpinnerContainer = document.getElementById('loading-spinner-container');
+        const authContainer = document.getElementById('auth-container');
+        const chatContainer = document.getElementById('chat-container');
+        const authDisplayNameInput = document.getElementById('auth-display-name');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+        const signupButton = document.getElementById('signup-button');
+        const signinButton = document.getElementById('signin-button');
+        const signoutButton = document.getElementById('signout-button');
+        const authErrorMessage = document.getElementById('auth-error-message');
+
+        const currentUserDisplayNameEl = document.getElementById('current-user-display-name');
+        const currentUserIdEl = document.getElementById('current-user-id');
+        const newRoomNameInput = document.getElementById('new-room-name-input');
+        const createRoomButton = document.getElementById('create-room-button');
+        const chatRoomsList = document.getElementById('chat-rooms-list');
+        const searchRoomInput = document.getElementById('search-room-input');
+        const onlineUsersList = document.getElementById('online-users-list');
+        const currentRoomNameEl = document.getElementById('current-room-name');
+        const messagesDisplay = document.getElementById('messages-display');
+        const messageForm = document.getElementById('message-form');
+        const newMessageInput = document.getElementById('new-message-input');
+
+        // Modal Elements
+        const createRoomModal = document.getElementById('create-room-modal');
+        const createRoomForm = document.getElementById('create-room-form');
+        const modalRoomNameInput = document.getElementById('modal-room-name');
+        const modalRoomPasswordInput = document.getElementById('modal-room-password');
+        const cancelCreateRoomButton = document.getElementById('cancel-create-room');
+        const createRoomErrorEl = document.getElementById('create-room-error');
+
+        const passwordModal = document.getElementById('password-modal');
+        const passwordForm = document.getElementById('password-form');
+        const passwordRoomNameDisplay = document.getElementById('password-room-name-display');
+        const joinRoomPasswordInput = document.getElementById('join-room-password');
+        const cancelJoinRoomButton = document.getElementById('cancel-join-room');
+        const passwordErrorEl = document.getElementById('password-error-message');
+
+        // Mobile specific elements
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const closeSidebarButton = document.getElementById('close-sidebar-button');
+
+        // --- Firebase Authentication (Setup) ---
+
+        const showAuthError = (message) => {
+            authErrorMessage.textContent = message;
+            authErrorMessage.classList.remove('hidden');
+        };
+
+        const hideAuthError = () => {
+            authErrorMessage.classList.add('hidden');
+            authErrorMessage.textContent = '';
+        };
+
+        const setupAuth = () => {
+            if (!app || !db || !auth) {
+                console.error("Firebase not initialized for auth setup.");
+                loadingSpinnerContainer.classList.add('hidden');
+                authContainer.classList.remove('hidden'); 
+                showAuthError("Firebase initialization failed. Check console for details.");
+                return;
+            }
+
+            onAuthStateChanged(auth, async (user) => {
+                loadingSpinnerContainer.classList.add('hidden'); 
+                if (user) {
+                    currentUserId = user.uid;
+                    currentUserName = user.displayName || user.email || `User-${user.uid.substring(0, 6)}`;
+                    currentUserDisplayNameEl.textContent = currentUserName;
+                    currentUserIdEl.textContent = currentUserId;
+
+                    authContainer.classList.add('hidden');
+                    chatContainer.classList.remove('hidden');
+
+                    await setOnlineStatus(true);
+                    startAllListeners();
+                } else {
+                    currentUserId = null;
+                    currentUserName = null;
+
+                    currentUserDisplayNameEl.textContent = 'Not logged in';
+                    currentUserIdEl.textContent = 'N/A';
+
+                    authContainer.classList.remove('hidden');
+                    chatContainer.classList.add('hidden');
+                    
+                    stopAllListeners();
+                }
+            });
+        };
+
+        // --- User Actions ---
+
+        signupButton.addEventListener('click', async () => {
+            hideAuthError();
+            const email = authEmailInput.value;
+            const password = authPasswordInput.value;
+            const displayName = authDisplayNameInput.value.trim();
+
+            if (!email || !password) {
+                showAuthError("Email and password are required.");
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                if (displayName) {
+                    await updateProfile(userCredential.user, { displayName: displayName });
+                }
+                console.log("User signed up:", userCredential.user.uid);
+            } catch (error) {
+                console.error("Sign Up Error:", error);
+                showAuthError(error.message);
+            }
+        });
+
+        signinButton.addEventListener('click', async () => {
+            hideAuthError();
+            const email = authEmailInput.value;
+            const password = authPasswordInput.value;
+
+            if (!email || !password) {
+                showAuthError("Email and password are required.");
+                return;
+            }
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                console.log("User signed in:", userCredential.user.uid);
+            } catch (error) {
+                console.error("Sign In Error:", error);
+                showAuthError(error.message);
+            }
+        });
+
+        signoutButton.addEventListener('click', async () => {
+            if (currentUserId) {
+                await setOnlineStatus(false); // Set offline before signing out
+            }
+            try {
+                await signOut(auth);
+                console.log("User signed out.");
+            } catch (error) {
+                console.error("Sign Out Error:", error);
+            }
+        });
+
+        // --- Online Status Management ---
+        const setOnlineStatus = async (isOnline) => {
+            if (!currentUserId || !db) return;
+            // Public path for online users
+            const userStatusRef = doc(db, `artifacts/${appId}/public/data/onlineUsers`, currentUserId);
+            try {
+                if (isOnline) {
+                    // Added currentRoomId to the user status document
+                    await setDoc(userStatusRef, {
+                        userId: currentUserId,
+                        lastSeen: serverTimestamp(),
+                        displayName: currentUserName,
+                        isOnline: true,
+                        currentRoomId: selectedRoomId 
+                    }, { merge: true });
+                } else {
+                    // Update only when going offline
+                    await updateDoc(userStatusRef, { isOnline: false, lastSeen: serverTimestamp() });
+                }
+            } catch (error) {
+                console.error("Error setting online status:", error);
+            }
+        };
+
+        window.addEventListener('beforeunload', () => {
+            if (currentUserId) {
+                setOnlineStatus(false);
+            }
+        });
+
+        // --- Real-time Listeners and Renderers ---
+        let unsubscribeMessages = null;
+        let unsubscribeOnlineUsers = null;
+        let unsubscribeChatRooms = null;
+
+        const startAllListeners = () => {
+            // Online Users Listener (Public Data)
+            const onlineUsersCollectionRef = collection(db, `artifacts/${appId}/public/data/onlineUsers`);
+            const qOnlineUsers = query(onlineUsersCollectionRef);
+            unsubscribeOnlineUsers = onSnapshot(qOnlineUsers, (snapshot) => {
+                const allOnlineUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderOnlineUsers(allOnlineUsers);
+            }, (error) => {
+                console.error("Error fetching online users:", error);
+            });
+
+            // Chat Rooms Listener (Public Data)
+            const chatRoomsCollectionRef = collection(db, `artifacts/${appId}/public/data/chatRooms`);
+            const qChatRooms = query(chatRoomsCollectionRef);
+
+            unsubscribeChatRooms = onSnapshot(qChatRooms, (snapshot) => {
+                allChatRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allChatRooms.sort((a, b) => a.name.localeCompare(b.name));
+                renderChatRooms(allChatRooms);
+
+                if (!allChatRooms.some(room => room.id === selectedRoomId)) {
+                    selectChatRoom(allChatRooms[0]?.id || 'general');
+                }
+            }, (error) => {
+                console.error("Error fetching chat rooms:", error);
+            });
+
+            if (auth.currentUser) {
+                 selectChatRoom(selectedRoomId);
+            }
+        };
+
+        const renderOnlineUsers = (allOnlineUsers) => {
+            onlineUsersList.innerHTML = ''; 
+
+            const filteredOnlineUsers = allOnlineUsers.filter(u =>
+                u.isOnline && u.currentRoomId === selectedRoomId
+            );
+
+            if (filteredOnlineUsers.length > 0) {
+                filteredOnlineUsers.forEach(onlineUser => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex items-center p-2 rounded-lg bg-green-50 text-green-800 mb-2 shadow-sm';
+                    userDiv.innerHTML = `
+                        <span class="relative flex h-3 w-3 mr-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <span class="font-medium">${onlineUser.displayName}</span>
+                    `;
+                    onlineUsersList.appendChild(userDiv);
+                });
+            } else {
+                onlineUsersList.innerHTML = '<p class="text-gray-500 text-sm italic">No one in this room.</p>';
+            }
+        };
+
+        const stopAllListeners = () => {
+            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeOnlineUsers) unsubscribeOnlineUsers();
+            if (unsubscribeChatRooms) unsubscribeChatRooms();
+            // Clear UI elements
+            onlineUsersList.innerHTML = '<p class="text-gray-500 text-sm italic">Loading users...</p>';
+            chatRoomsList.innerHTML = '<p class="text-gray-500 text-sm italic">Loading rooms...</p>';
+            messagesDisplay.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-gray-500 text-lg italic">Please sign in to view messages.</p></div>';
+        };
+
+        const renderChatRooms = (roomsToRender) => {
+            chatRoomsList.innerHTML = ''; // Clear previous list
+            if (roomsToRender.length === 0) {
+                chatRoomsList.innerHTML = '<p class="text-gray-500 text-sm italic">No rooms found.</p>';
+                return;
+            }
+
+            roomsToRender.forEach(room => {
+                const roomButton = document.createElement('button');
+                const isProtected = !!room.passwordHash;
+                roomButton.className = `w-full p-3 text-left rounded-full transition duration-200 ease-in-out flex items-center justify-between ${
+                    selectedRoomId === room.id
+                        // Updated colors to use the new accent
+                        ? 'bg-FuzzyBuzzy-accent-100 text-FuzzyBuzzy-accent-800 font-bold shadow-inner'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`;
+                roomButton.innerHTML = `
+                    <span>#${room.name}</span>
+                    ${isProtected ? '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2 text-red-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>' : ''}
+                `;
+                roomButton.dataset.roomId = room.id;
+                roomButton.addEventListener('click', () => {
+                    handleRoomSelection(room.id);
+                    closeSidebar();
+                });
+                chatRoomsList.appendChild(roomButton);
+            });
+        };
+
+        // --- Room Selection Handler to Check Password ---
+        const handleRoomSelection = async (roomId) => {
+            const roomData = allChatRooms.find(r => r.id === roomId);
+
+            if (!roomData || !roomData.passwordHash) {
+                selectChatRoom(roomId);
+                return;
+            }
+
+            roomToJoinId = roomId; 
+            passwordRoomNameDisplay.textContent = `Please enter the password for #${roomData.name}.`;
+            joinRoomPasswordInput.value = '';
+            passwordErrorEl.classList.add('hidden');
+            passwordModal.classList.remove('hidden');
+            joinRoomPasswordInput.focus();
+        };
+
+        const selectChatRoom = async (roomId) => {
+            if (!roomId || !auth.currentUser) return; 
+
+            if (unsubscribeMessages) {
+                unsubscribeMessages(); 
+            }
+
+            selectedRoomId = roomId;
+            currentRoomNameEl.textContent = `#${roomId}`;
+            messagesDisplay.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-gray-500 text-lg italic">Loading messages...</p></div>';
+
+            const roomData = allChatRooms.find(r => r.id === roomId);
+            if (roomData) {
+                 currentRoomNameEl.textContent = `#${roomData.name}`;
+            }
+
+            // IMPORTANT: Update the user's online status with the new room ID
+            if (currentUserId) {
+                await setOnlineStatus(true);
+            }
+
+            const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/chatRooms/${selectedRoomId}/messages`);
+            const qMessages = query(messagesCollectionRef);
+
+            unsubscribeMessages = onSnapshot(qMessages, (snapshot) => {
+                messagesDisplay.innerHTML = ''; // Clear previous messages
+                if (snapshot.empty) {
+                    messagesDisplay.innerHTML = '<div class="flex items-center justify-center h-full"><p class="text-gray-500 text-lg italic">No messages yet. Start the conversation!</p></div>';
+                } else {
+                    const sortedMessages = snapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+
+                    sortedMessages.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = `flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`;
+                        messageDiv.innerHTML = `
+                            <div class="max-w-xs lg:max-w-md p-4 rounded-xl shadow-md ${
+                                // Updated colors to use the new accent
+                                msg.senderId === currentUserId
+                                    ? 'bg-FuzzyBuzzy-accent-500 text-white rounded-br-none'
+                                    : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                            }">
+                                <div class="font-semibold text-sm mb-1">
+                                    ${msg.senderId === currentUserId ? 'You' : msg.senderName}
+                                </div>
+                                <p class="text-lg">${msg.text}</p>
+                                <div class="text-right text-xs opacity-75 mt-1">
+                                    ${msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString() : 'Sending...'}
+                                </div>
+                            </div>
+                        `;
+                        messagesDisplay.appendChild(messageDiv);
+                    });
+                }
+                scrollToBottom();
+            }, (error) => {
+                console.error("Error fetching messages:", error);
+                messagesDisplay.innerHTML = '<p class="text-red-500 text-center">Error loading messages.</p>';
+            });
+
+            // Update active room button styling
+            renderChatRooms(allChatRooms.filter(room => room.name.toLowerCase().includes(searchRoomInput.value.toLowerCase())));
+        };
+
+        const scrollToBottom = () => {
+            messagesDisplay.scrollTop = messagesDisplay.scrollHeight;
+        };
+
+        // --- Mobile Sidebar Functions ---
+        const openSidebar = () => {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.remove('hidden');
+        };
+
+        const closeSidebar = () => {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.add('hidden');
+        };
+
+        // --- Event Listeners ---
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const messageText = newMessageInput.value.trim();
+            if (messageText === '' || !currentUserId || !selectedRoomId) return;
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/public/data/chatRooms/${selectedRoomId}/messages`), {
+                    text: messageText,
+                    senderId: currentUserId,
+                    senderName: currentUserName,
+                    timestamp: serverTimestamp(),
+                });
+                newMessageInput.value = '';
+                scrollToBottom();
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        });
+
+        // 'Create' button now opens the modal
+        createRoomButton.addEventListener('click', () => {
+            const currentName = newRoomNameInput.value.trim();
+            modalRoomNameInput.value = currentName; // Pre-fill name if typed
+            modalRoomPasswordInput.value = '';
+            createRoomErrorEl.classList.add('hidden');
+            createRoomModal.classList.remove('hidden');
+            if (!currentName) {
+                modalRoomNameInput.focus();
+            } else {
+                modalRoomPasswordInput.focus();
+            }
+        });
+
+        // Handles the form submission inside the Create Room Modal
+        createRoomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            createRoomErrorEl.classList.add('hidden');
+
+            const newRoomDisplayName = modalRoomNameInput.value.trim();
+            const rawPassword = modalRoomPasswordInput.value;
+            const newRoomId = newRoomDisplayName.toLowerCase().replace(/\s/g, '-');
+
+            if (newRoomDisplayName === '') {
+                createRoomErrorEl.textContent = 'Room name cannot be empty.';
+                createRoomErrorEl.classList.remove('hidden');
+                return;
+            }
+
+            const existingRoom = allChatRooms.find(room => room.id === newRoomId);
+            if (existingRoom) {
+                createRoomErrorEl.textContent = `Room "${existingRoom.name}" already exists.`;
+                createRoomErrorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const roomData = {
+                    name: newRoomDisplayName,
+                    createdAt: serverTimestamp(),
+                    createdBy: currentUserId,
+                    // If password is provided, store the hash
+                    passwordHash: rawPassword ? simpleHash(rawPassword) : null,
+                };
+
+                await setDoc(doc(db, `artifacts/${appId}/public/data/chatRooms`, newRoomId), roomData);
+
+                // Close modal and switch to new room
+                createRoomModal.classList.add('hidden');
+                newRoomNameInput.value = '';
+                selectChatRoom(newRoomId);
+            } catch (error) {
+                console.error("Error creating room:", error);
+                createRoomErrorEl.textContent = 'Failed to create room. See console for details.';
+                createRoomErrorEl.classList.remove('hidden');
+            }
+        });
+
+        // Cancel buttons for modals
+        cancelCreateRoomButton.addEventListener('click', () => {
+            createRoomModal.classList.add('hidden');
+        });
+
+        cancelJoinRoomButton.addEventListener('click', () => {
+            passwordModal.classList.add('hidden');
+            roomToJoinId = null;
+        });
+
+
+        // Handle password submission when joining a protected room
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            passwordErrorEl.classList.add('hidden');
+
+            const enteredPassword = joinRoomPasswordInput.value;
+            const roomData = allChatRooms.find(r => r.id === roomToJoinId);
+
+            if (!roomData) {
+                passwordErrorEl.textContent = 'Error: Room not found.';
+                passwordErrorEl.classList.remove('hidden');
+                return;
+            }
+
+            const enteredHash = simpleHash(enteredPassword);
+
+            if (enteredHash === roomData.passwordHash) {
+                // Success! Join the room.
+                passwordModal.classList.add('hidden');
+                selectChatRoom(roomToJoinId);
+            } else {
+                // Failure! Show error.
+                passwordErrorEl.textContent = 'Incorrect password.';
+                passwordErrorEl.classList.remove('hidden');
+                joinRoomPasswordInput.focus();
+            }
+        });
+
+        searchRoomInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredRooms = allChatRooms.filter(room =>
+                room.name.toLowerCase().includes(searchTerm)
+            );
+            renderChatRooms(filteredRooms);
+        });
+
+        mobileMenuButton.addEventListener('click', openSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+        closeSidebarButton.addEventListener('click', closeSidebar);
+
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', setupAuth);
+    </script>
+</body>
+</html>
+
