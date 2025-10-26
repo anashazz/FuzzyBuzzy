@@ -102,6 +102,18 @@
             flex: 1;
             overflow-y: auto; 
         }
+        
+        /* New styles for the toast notification (keeping it for in-app visibility) */
+        .toast-notification {
+             /* Use pointer-events-auto for the toast itself so it can be clicked */
+            transition: all 0.3s ease-in-out;
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .toast-notification.hide {
+             opacity: 0;
+             transform: translateX(150%);
+        }
     </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -173,6 +185,15 @@
                     <h1 class="text-2xl md:text-3xl font-bold tracking-tight">FuzzyBuzzy Messenger</h1>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- NEW: Notification Enable Button -->
+                    <button
+                        id="enable-notifications-button"
+                        class="text-sm px-3 py-1 rounded-full border border-white hover:bg-FuzzyBuzzy-accent-500 transition duration-200 ease-in-out"
+                        title="Enable desktop notifications"
+                    >
+                        Enable Notifications
+                    </button>
+
                     <div class="text-sm text-right">
                         Logged in as: <span id="current-user-display-name" class="font-semibold"></span>
                         <br/>
@@ -286,6 +307,11 @@
             </div>
         </div>
     </div> <!-- End of #chat-application-wrapper -->
+
+    <!-- Notification Toast Container (Fixed bottom-right for IN-APP TOASTS) -->
+    <div id="notification-toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
+        <!-- Notifications will be dynamically added here -->
+    </div>
 
     <!-- --- Modals for Password Protected Rooms --- -->
 
@@ -410,6 +436,15 @@
         let selectedRoomId = 'general'; // Default room
         let allChatRooms = []; 
         let roomToJoinId = null; 
+        
+        // Map to track the last update time of each room for notification logic
+        let lastRoomUpdateTimes = {}; 
+        
+        // NEW: Timer for the delayed "waiting" notification
+        let delayedNotificationTimer = null;
+        const DELAYED_NOTIFICATION_MESSAGE = "Someone's waiting for youuuuu!";
+        const DELAYED_NOTIFICATION_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 
         try {
             app = initializeApp(firebaseConfig);
@@ -454,6 +489,11 @@
         const messagesDisplay = document.getElementById('messages-display');
         const messageForm = document.getElementById('message-form');
         const newMessageInput = document.getElementById('new-message-input');
+        
+        // Notification Elements
+        const notificationToastContainer = document.getElementById('notification-toast-container');
+        const enableNotificationsButton = document.getElementById('enable-notifications-button');
+
 
         // Modal Elements
         const createRoomModal = document.getElementById('create-room-modal');
@@ -510,6 +550,7 @@
 
                     await setOnlineStatus(true);
                     startAllListeners();
+                    updateNotificationButton(); // Check and update button state
                 } else {
                     currentUserId = null;
                     currentUserName = null;
@@ -611,6 +652,126 @@
             }
         });
 
+        // --- Notification Functionality (In-App Toast) ---
+        const showToastNotification = (title, body) => {
+            if (notificationToastContainer.children.length >= 5) {
+                notificationToastContainer.firstChild.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'bg-white text-gray-800 p-4 rounded-xl shadow-2xl border-l-4 border-FuzzyBuzzy-accent-500 pointer-events-auto w-72 max-w-full toast-notification';
+
+            toast.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <p class="font-bold text-lg">${title}</p>
+                    <button class="text-gray-500 hover:text-gray-800 focus:outline-none close-toast-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600">${body}</p>
+            `;
+
+            notificationToastContainer.appendChild(toast);
+
+            // Add close handler
+            toast.querySelector('.close-toast-btn').addEventListener('click', () => {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 300);
+            });
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                if (notificationToastContainer.contains(toast)) {
+                    toast.classList.add('hide');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        };
+        
+        // --- NATIVE BROWSER NOTIFICATIONS (Standard API only) ---
+
+        let notificationPermissionGranted = false;
+        
+        const updateNotificationButton = () => {
+            if (Notification.permission === 'granted') {
+                enableNotificationsButton.textContent = 'Notifications Enabled';
+                enableNotificationsButton.className = 'text-sm px-3 py-1 rounded-full border border-green-400 bg-green-500 text-white cursor-default';
+                notificationPermissionGranted = true;
+            } else if (Notification.permission === 'denied') {
+                enableNotificationsButton.textContent = 'Notifications Blocked';
+                enableNotificationsButton.className = 'text-sm px-3 py-1 rounded-full border border-red-400 bg-red-500 text-white cursor-default';
+                notificationPermissionGranted = false;
+            } else {
+                enableNotificationsButton.textContent = 'Enable Notifications';
+                enableNotificationsButton.className = 'text-sm px-3 py-1 rounded-full border border-white hover:bg-FuzzyBuzzy-accent-500 transition duration-200 ease-in-out';
+                notificationPermissionGranted = false;
+            }
+        };
+
+        const requestNotificationPermission = async () => {
+            if (!('Notification' in window)) {
+                showToastNotification('Error', 'This browser does not support desktop notifications.');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                showToastNotification('Success', 'Desktop notifications are already enabled!');
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            updateNotificationButton();
+
+            if (permission === 'granted') {
+                showToastNotification('Success', 'Desktop notifications enabled!');
+            } else {
+                showToastNotification('Permission Denied', 'Notifications permission was denied by the user.');
+            }
+        };
+
+        enableNotificationsButton.addEventListener('click', requestNotificationPermission);
+        
+        // NEW: Function to display the specific delayed message
+        const showDelayedNotification = () => {
+            if (Notification.permission === 'granted') {
+                const title = "FuzzyBuzzy Messenger";
+                const options = {
+                    body: DELAYED_NOTIFICATION_MESSAGE,
+                    icon: 'https://placehold.co/192x192/0394fc/ffffff?text=FB',
+                    tag: 'delayed-reminder', // Use a unique tag to prevent multiple instances of this exact notification
+                };
+                new Notification(title, options);
+            }
+        };
+
+        // NEW: Handler for visibility change (to start/stop the 5-minute timer)
+        const handleVisibilityChange = () => {
+            if (!currentUserId) return; // Only run if logged in
+
+            if (document.hidden) {
+                // User left the tab/window. Start the timer.
+                if (delayedNotificationTimer === null) {
+                    console.log("Tab hidden. Starting 5-minute reminder timer...");
+                    delayedNotificationTimer = setTimeout(() => {
+                        // Check if still hidden and if permission is granted
+                        if (document.hidden && Notification.permission === 'granted') {
+                            showDelayedNotification();
+                        }
+                        // Reset timer ID whether it fired or not
+                        delayedNotificationTimer = null; 
+                    }, DELAYED_NOTIFICATION_TIME);
+                }
+            } else {
+                // User returned to the tab/window. Clear the timer.
+                if (delayedNotificationTimer !== null) {
+                    console.log("Tab focused. Clearing 5-minute reminder timer.");
+                    clearTimeout(delayedNotificationTimer);
+                    delayedNotificationTimer = null;
+                }
+            }
+        };
+
+
         // --- Real-time Listeners and Renderers ---
         let unsubscribeMessages = null;
         let unsubscribeOnlineUsers = null;
@@ -632,8 +793,50 @@
             const qChatRooms = query(chatRoomsCollectionRef);
 
             unsubscribeChatRooms = onSnapshot(qChatRooms, (snapshot) => {
-                allChatRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const newRooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // 1. Check for notifications before updating state
+                newRooms.forEach(room => {
+                    // Convert Firestore Timestamp to milliseconds for comparison
+                    const newTime = room.lastMessageTime ? room.lastMessageTime.toMillis() : 0;
+                    const oldTime = lastRoomUpdateTimes[room.id] || 0;
+                    
+                    // Check if the room has a new message, and it's not the currently selected room, 
+                    // AND it wasn't sent by the current user (to prevent self-notification spam)
+                    if (newTime > oldTime && room.id !== selectedRoomId && room.lastMessageSenderId !== currentUserId) {
+                        
+                        // Show in-app toast notification (if tab is focused/visible)
+                        if (!document.hidden) {
+                            showToastNotification(
+                                `New message in #${room.name}`, 
+                                `${room.lastMessageSender || 'Someone'}: ${room.lastMessageText || '...'}`
+                            );
+                        }
+                        
+                        // Use standard Notification API if document is hidden (tabbed away)
+                        if (notificationPermissionGranted && document.hidden) {
+                           const title = `New message in #${room.name}`;
+                           const options = {
+                               body: `${room.lastMessageSender || 'Someone'}: ${room.lastMessageText || '...'}`,
+                               // Using a generic icon path
+                               icon: 'https://placehold.co/192x192/0394fc/ffffff?text=FB', 
+                               tag: room.id, // Allows grouping notifications
+                           };
+                           // Standard browser notification
+                           new Notification(title, options);
+                        }
+                    }
+                });
+
+                // 2. Update local state and times map
+                allChatRooms = newRooms;
                 allChatRooms.sort((a, b) => a.name.localeCompare(b.name));
+                
+                // Update the tracker map for the next snapshot
+                allChatRooms.forEach(room => {
+                    lastRoomUpdateTimes[room.id] = room.lastMessageTime ? room.lastMessageTime.toMillis() : 0;
+                });
+                
                 renderChatRooms(allChatRooms);
 
                 if (!allChatRooms.some(room => room.id === selectedRoomId)) {
@@ -677,6 +880,13 @@
             if (unsubscribeMessages) unsubscribeMessages();
             if (unsubscribeOnlineUsers) unsubscribeOnlineUsers();
             if (unsubscribeChatRooms) unsubscribeChatRooms();
+            
+            // Clear the delayed notification timer if signing out
+            if (delayedNotificationTimer !== null) {
+                clearTimeout(delayedNotificationTimer);
+                delayedNotificationTimer = null;
+            }
+            
             // Clear UI elements
             onlineUsersList.innerHTML = '<p class="text-gray-500 text-sm italic">Loading users...</p>';
             chatRoomsList.innerHTML = '<p class="text-gray-500 text-sm italic">Loading rooms...</p>';
@@ -816,12 +1026,22 @@
             if (messageText === '' || !currentUserId || !selectedRoomId) return;
 
             try {
+                // 1. Add the new message to the subcollection
                 await addDoc(collection(db, `artifacts/${appId}/public/data/chatRooms/${selectedRoomId}/messages`), {
                     text: messageText,
                     senderId: currentUserId,
                     senderName: currentUserName,
                     timestamp: serverTimestamp(),
                 });
+
+                // 2. IMPORTANT: Update the parent room document with the last message info for notifications
+                await updateDoc(doc(db, `artifacts/${appId}/public/data/chatRooms`, selectedRoomId), {
+                    lastMessageTime: serverTimestamp(),
+                    lastMessageSender: currentUserName,
+                    lastMessageSenderId: currentUserId,
+                    lastMessageText: messageText.substring(0, 50) + (messageText.length > 50 ? '...' : '')
+                });
+
                 newMessageInput.value = '';
                 scrollToBottom();
             } catch (error) {
@@ -872,6 +1092,11 @@
                     createdBy: currentUserId,
                     // If password is provided, store the hash
                     passwordHash: rawPassword ? simpleHash(rawPassword) : null,
+                    // Initialize notification fields
+                    lastMessageTime: serverTimestamp(),
+                    lastMessageSender: currentUserName,
+                    lastMessageSenderId: currentUserId,
+                    lastMessageText: "Room created."
                 };
 
                 await setDoc(doc(db, `artifacts/${appId}/public/data/chatRooms`, newRoomId), roomData);
@@ -940,8 +1165,18 @@
 
 
         // Initial setup on page load
-        document.addEventListener('DOMContentLoaded', setupAuth);
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupAuth();
+            
+            // Initial check for notification status
+            if ('Notification' in window) {
+                updateNotificationButton();
+            }
+            
+            // NEW: Add listener for delayed notification logic
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        });
+
     </script>
 </body>
 </html>
-
