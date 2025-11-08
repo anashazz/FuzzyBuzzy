@@ -286,7 +286,14 @@
                                 type="submit"
                                 class="bg-FuzzyBuzzy-accent-500 text-white p-3 rounded-full hover:bg-FuzzyBuzzy-accent-600 transition duration-200 ease-in-out shadow-lg transform active:scale-95"
                             >
-<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M120-160v-640l760 320-760 320Zm80-120 474-200-474-200v140l240 60-240 60v140Zm0 0v-400 400Z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M760-200v-160q0-50-35-85t-85-35H273l144 144-57 56-240-240 240-240 57 56-144 144h367q83 0 141.5 58.5T840-360v160h-80Z"/></svg>
+                                
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                                    />
+                                </svg>
                             </button>
                         </div>
                     </form>
@@ -294,6 +301,12 @@
             </div>
         </div>
     </div> <!-- End of #chat-application-wrapper -->
+
+    <!-- Notification Toast Container (Fixed bottom-right for IN-APP TOASTS) -->
+    <div id="notification-toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none">
+        <!-- Notifications will be dynamically added here -->
+    </div>
+
     <!-- --- Modals for Password Protected Rooms --- -->
 
     <!-- Create Room Modal -->
