@@ -1,34 +1,70 @@
 # FuzzyBuzzy Community Guidelines
-FuzzyBuzzy is committed to providing a fun, safe, and positive environment for all users. By creating an account and using our app, you agree to abide by these simple community standards. Failure to comply may result in warnings, temporary bans, or permanent account termination.
 
-## 1. Be Respectful and Kind
-No Harassment or Bullying: Do not engage in hate speech, harassment, bullying, or intimidation against other users.
+Welcome to FuzzyBuzzy, the chat application designed for easy, real-time communication! To ensure a safe, positive, and enjoyable experience for everyone, we ask that all users adhere to the following community guidelines.
 
-Discrimination: We have zero tolerance for discrimination based on race, gender, sexual orientation, religion, or background.
+## 1. Respectful Communication
 
-Violence and Threats: Do not post or share content that promotes violence, self-harm, or illegal acts.
+### A. Be Kind
 
-Integrity and Misinformation: Do not intentionally post false or misleading content that could cause genuine harm or widespread confusion within the community.
+Treat all members with respect and courtesy. Personal attacks, harassment, bullying, or derogatory comments based on race, ethnicity, religion, gender, sexual orientation, disability, or age are strictly prohibited.
 
-## 2. Protect Privacy
-Private Information: Do not share the private or personally identifiable information of others (like addresses, phone numbers, or private photos) without their explicit consent.
+### B. Keep it Friendly
 
-Impersonation: Do not impersonate other users, company staff, or well-known figures.
+Do not engage in excessive flaming, trolling, or deliberately provoking arguments. Disagreements are fine, but they must be handled respectfully and constructively.
 
-## 3. Keep the App Usable (No Spam)
-Spam and Commercial Content: Do not send mass unsolicited messages (spam) or excessively advertise products or services without proper context or permission from the chat participants.
+### C. Privacy
 
-Malware/Phishing: Do not share links or files containing viruses, malware, or phishing scams.
+Do not share private information (phone numbers, addresses, personal photos, financial details, etc.) about yourself or others. Do not use FuzzyBuzzy to dox (publicly expose private information about) any user or third party.
 
-Account Abuse: Do not create fake accounts or use automated systems (bots) to interfere with the app's services.
+## 2. Prohibited Content and Conduct
 
-## 4. Report Issues
-If you see something that violates these rules, please use the Report feature in the chat or contact our support team immediately. Your help keeps the community safe!
+The following types of content and activities are strictly forbidden on FuzzyBuzzy:
 
-## 5. Keep Content Appropriate
-Age-Inappropriate Content: Do not share, promote, or encourage sexually explicit content, especially involving minors. This content is strictly prohibited.
+### A. Illegal Activity
 
-Intellectual Property: Only post content that you own or have the legal right to use and share. Do not upload copyrighted material without permission.
+Any content or conduct that promotes, facilitates, or encourages illegal acts is prohibited. This includes, but is not limited to, sharing links or instructions for illegal hacking, piracy, or fraud.
+
+### B. Hateful & Discriminatory Content
+
+Content that promotes violence, hatred, or discrimination against individuals or groups based on any characteristic (as listed in Section 1.A) is not allowed.
+
+### C. Spam and Malicious Content
+
+Do not flood chat rooms, repeatedly post irrelevant content, or use automated scripts/bots to disrupt the conversation. Do not share viruses, malware, phishing links, or other malicious content.
+
+### D. Explicit Material
+
+Pornographic or sexually explicit material is not permitted in public rooms. Private rooms may be subject to local legal restrictions.
+
+## 3. Room Management
+
+### A. Room Names
+
+Keep room names respectful and relevant to the topic. Do not use offensive or misleading language in room titles.
+
+### B. Protected Rooms
+
+If you create a password-protected room, you are responsible for the content and users within it. Ensure that you and your users still adhere to the fundamental rules (Sections 1 and 2).
+
+## 4. Moderation and Enforcement
+
+### A. Reporting Violations
+
+If you witness a violation of these guidelines, please report it immediately to the room moderator or platform administrator. Do not attempt to moderate or retaliate against the offending user yourself.
+
+### B. Consequences
+
+FuzzyBuzzy administrators and moderators reserve the right to enforce these guidelines at our sole discretion. Violations may result in:
+
+A formal warning
+
+Temporary suspension (kick/ban) from a room or the entire platform.
+
+Permanent account termination.
+
+### C. Judgment Calls
+
+Sometimes, a situation may not explicitly fall under these rules, but still harms the community. We reserve the right to take action to protect the community and ensure a positive environment.
 
 ***The FuzzyBuzzy Team reserves the right to remove any content or accounts that violate these guidelines.***
 
