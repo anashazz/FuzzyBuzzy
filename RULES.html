@@ -1,0 +1,364 @@
+<!-- Chosen Palette: Energetic Blue (Slate & #0394fc) -->
+<!-- Application Structure Plan: The app is designed as a single-page dashboard with a persistent side navigation, which is more user-friendly than a long scrolling document. The navigation bar allows users to instantly switch between the 4 main sections of the guidelines (Positive Vibes, Hard No's, Room Check, Mods). The main content area uses an accordion/collapsible interface for the sub-rules. This was chosen because it makes the information highly scannable and less overwhelming. Users can get a high-level overview from the headings and then "drill down" by clicking to expand any rule they want to learn more more about. This interaction model directly supports the goal of making the rules easy to explore and understand. -->
+<!-- Visualization & Content Choices: Report Info (e.g., Section 1.A "Main Character Energy") -> Goal (Inform/Organize) -> Presentation Method (Interactive Accordion Panel: Clickable header + collapsible content div) -> Interaction (User clicks header to toggle visibility of the rule's text) -> Justification (Prevents a massive "wall of text" and encourages user engagement through clicking, making rule exploration an active, not passive, task.) -> Library/Method (Vanilla JS toggling Tailwind 'hidden' class). No charts are used as the source material is purely qualitative text. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FuzzyBuzzy: The Vibe Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+        }
+        /* Updated active state colors to reflect the new #0394fc blue accent */
+        .nav-link.active {
+            background-color: #eff6ff; /* A light blue background (Tailwind blue-50 equivalent) */
+            color: #0394fc; /* The main accent color */
+            font-weight: 600;
+        }
+        .nav-link:not(.active):hover {
+            background-color: #f5f3ff;
+        }
+        .collapsible-header.open > div > .material-icons-outlined.arrow {
+            transform: rotate(90deg);
+        }
+        .material-icons-outlined {
+            font-size: 20px;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen">
+    
+    <!-- Global Header for Centered Title -->
+    <header class="w-full bg-white shadow-lg p-4 text-center border-b border-slate-200">
+        <!-- The main title is now centered on the screen -->
+        <h1 class="text-3xl font-extrabold text-[#0394fc]">FuzzyBuzzy</h1>
+    </header>
+
+    <!-- Main Flex Container for Nav and Content, takes remaining height -->
+    <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
+        
+        <!-- Navigation Sidebar -->
+        <nav class="w-full md:w-64 bg-white shadow-lg md:border-r md:border-slate-200 p-4 md:h-full overflow-y-auto">
+            <!-- Subtitle remains in the nav -->
+            <h2 class="text-xs uppercase text-slate-500 font-semibold mb-4 text-center md:text-left">The Vibe Check</h2>
+            <ul id="navigation" class="space-y-1">
+                <li>
+                    <a href="#welcome" class="nav-link active flex items-center space-x-2 p-2 rounded-lg" data-target="page-welcome">
+                        <span class="material-icons-outlined">home</span>
+                        <span>Welcome</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#positive" class="nav-link flex items-center space-x-2 p-2 rounded-lg" data-target="page-positive">
+                        <span class="material-icons-outlined">check_circle</span>
+                        <span>Positive Vibes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#nos" class="nav-link flex items-center space-x-2 p-2 rounded-lg" data-target="page-nos">
+                        <span class="material-icons-outlined">gpp_bad</span>
+                        <span>Hard No's</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#rooms" class="nav-link flex items-center space-x-2 p-2 rounded-lg" data-target="page-rooms">
+                        <span class="material-icons-outlined">groups</span>
+                        <span>Room Check</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#mods" class="nav-link flex items-center space-x-2 p-2 rounded-lg" data-target="page-mods">
+                        <span class="material-icons-outlined">info</span>
+                        <span>Mods & Consequences</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="content-container" class="flex-1 p-6 md:p-10 max-w-4xl mx-auto w-full overflow-y-auto">
+
+            <!-- Welcome Page -->
+            <section id="page-welcome" class="page-section space-y-4">
+                <h1 class="text-3xl font-bold mb-4">Welcome to the Vibe Check</h1>
+                <p class="text-lg text-slate-600">
+                    Welcome to FuzzyBuzzy, where the chat is fast and the vibes are fire. To keep the community a safe space and fun—on god—you gotta follow these rules.
+                </p>
+                <p class="text-lg text-slate-600">
+                    This is an interactive guide to our community rules. Use the navigation on the left to explore, or just click the topics below to see what's good. Read 'em, internalize 'em, and let's send it.
+                </p>
+                <div class="p-4 bg-white rounded-xl shadow-sm border border-slate-200">
+                    <!-- Updated text color -->
+                    <h3 class="font-semibold text-lg text-[#0394fc]">How this works</h3>
+                    <p class="text-slate-600">Click any navigation item on the left to jump to a section. Click any of the rule headers in a section to expand it and read the details. Easy, fr fr.</p>
+                </div>
+            </section>
+
+            <!-- Positive Vibes Page -->
+            <section id="page-positive" class="page-section hidden space-y-6">
+                <h1 class="text-3xl font-bold mb-4">Keep the Vibe Positive</h1>
+                <p class="text-lg text-slate-600 mb-6">This section is all about how we treat each other. To keep things chill, everyone needs to bring main character energy. Click each rule to expand and see the details.</p>
+                
+                <div class="space-y-3" id="accordion-positive">
+                    <!-- Item 1 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">A. Main Character Energy</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Treat everyone with main character energy—respectful, period. If you're sending shade, harassment, bullying, or hate (based on race, gender, etc.), you're giving villain arc. Don't be cheugy; be kind.</p>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">B. We Are Not Doing the Messy Era</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Do not be a troll or start unnecessary beef (flaming). If you have to disagree, make it a chill conversation, not a 3 AM Twitter war. Keep it friendly, or take it to the DMs (that’s called discretion).</p>
+                        </div>
+                    </div>
+                    <!-- Item 3 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">C. Protect the Ops (Privacy)</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Don't share anyone's personal info (pics, phone numbers, location). Doxxing is foul and a straight-up L—it will get you gone. Keep things on the down low.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hard No's Page -->
+            <section id="page-nos" class="page-section hidden space-y-6">
+                <h1 class="text-3xl font-bold mb-4">Hard No's (Prohibited Content)</h1>
+                <p class="text-lg text-slate-600 mb-6">These are the big ones. If you post this, you're the one catching the consequences. Fr fr. Click each rule to see what's up.</p>
+                
+                <div class="space-y-3" id="accordion-nos">
+                    <!-- Item 1 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-red-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-red-600">A. Don't Risk the Permaban IRL</span>
+                                <span class="material-icons-outlined arrow text-red-400 transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Don't post anything that's illegal, ever. No links for scams, hacks, or other majorly sus activity. We don't need that kind of energy, touch grass instead.</p>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-red-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-red-600">B. If It's Giving Hater, It's Deleted</span>
+                                <span class="material-icons-outlined arrow text-red-400 transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">If content promotes violence, hatred, or discrimination, it’s a hard delete. We don't do that here.</p>
+                        </div>
+                    </div>
+                    <!-- Item 3 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-red-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-red-600">C. Stop the Spam. It's Giving Lag.</span>
+                                <span class="material-icons-outlined arrow text-red-400 transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Do not flood the chat or use bots to ruin the feed. If you're sending malware or phishing links, you're getting banned—no warning. That’s just basic.</p>
+                        </div>
+                    </div>
+                    <!-- Item 4 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-red-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-semibold text-red-600">D. NSFW? Keep it Private (If Legal)</span>
+                                <span class="material-icons-outlined arrow text-red-400 transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">No explicit material in public rooms. Protected rooms are on you, but local laws are still the boss. Don't mess up the bag.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Room Check Page -->
+            <section id="page-rooms" class="page-section hidden space-y-6">
+                <h1 class="text-3xl font-bold mb-4">Room Check</h1>
+                <p class="text-lg text-slate-600 mb-6">Here's the tea on chat rooms, public and private. Keep it clean. Click below for the rules.</p>
+                
+                <div class="space-y-3" id="accordion-rooms">
+                    <!-- Item 1 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">A. Title Check</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Keep room names clean and relevant. Don't be messy with the titles; we're trying to keep things organized. If the title is yikes, it gets changed.</p>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">B. Secret Societies (Protected Rooms)</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">If you lock a room, you're the leader. Make sure your crew is following the main rules (Sections 1 and 2), even behind the password. Be responsible for your squad.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mods Page -->
+            <section id="page-mods" class="page-section hidden space-y-6">
+                <h1 class="text-3xl font-bold mb-4">The Mods Are Watching</h1>
+                <p class="text-lg text-slate-600 mb-6">This part is about reporting, consequences, and how we keep the vibe safe. Expand the rules to get the info.</p>
+                
+                <div class="space-y-3" id="accordion-mods">
+                    <!-- Item 1 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">A. If It's Giving Red Flag, Send Me Proof</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">If you see something sus, send me proof (report it immediately). Do not try to handle it yourself and start drama. Let the pros deal with the cringe.</p>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">B. Consequences (The Receipts)</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600 mb-2">Admins and Mods have the final say (period). If you break the rules, you might get:</p>
+                            <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                                <li>A formal warning (the first strike).</li>
+                                <li>A temporary ban/kick (time out).</li>
+                                <li>A permanent RIP (account termination).</li>
+                            </ol>
+                        </div>
+                    </div>
+                    <!-- Item 3 -->
+                    <div class="collapsible-container bg-white rounded-xl shadow-sm overflow-hidden border border-blue-200">
+                        <button class="collapsible-header w-full text-left p-4">
+                            <div class="flex justify-between items-center">
+                                <!-- Updated text color -->
+                                <span class="text-lg font-semibold text-[#0394fc]">C. Protect the Vibe (It Slaps)</span>
+                                <!-- Updated arrow color -->
+                                <span class="material-icons-outlined arrow text-[#0394fc] transition-transform duration-200">chevron_right</span>
+                            </div>
+                        </button>
+                        <div class="collapsible-content hidden p-4 pt-0">
+                            <p class="text-slate-600">Sometimes a rule isn't *technically* broken, but the vibe is ruined. If it harms the community, we'll step in to keep the chat quality high. We're prioritizing the glow-up.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pageSections = document.querySelectorAll('.page-section');
+            const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+
+            function showPage(targetId) {
+                pageSections.forEach(section => {
+                    if (section.id === targetId) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    if (link.dataset.target === targetId) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.dataset.target;
+                    showPage(targetId);
+                    window.location.hash = link.hash;
+                });
+            });
+
+            collapsibleHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    content.classList.toggle('hidden');
+                    header.classList.toggle('open');
+                });
+            });
+
+            const initialHash = window.location.hash;
+            let targetPage = 'page-welcome';
+            if (initialHash) {
+                const targetLink = document.querySelector(`.nav-link[href="${initialHash}"]`);
+                if (targetLink) {
+                    targetPage = targetLink.dataset.target;
+                }
+            }
+            showPage(targetPage);
+        });
+    </script>
+</body>
+</html>
